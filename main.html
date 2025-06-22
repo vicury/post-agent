@@ -330,11 +330,18 @@
                     <div class="step-title">选择主题</div>
                 </div>
                 <div class="step-content">
-                    <div class="step-description">从预设的选题列表中随机或按策略选择一个主题</div>
+                    <div class="step-description">从预设的选题列表中随机或按策略选择一个主题，或自定义输入主题</div>
                     <div class="data-box input">
                         <div class="data-label">📋 选题列表：</div>
                         <div id="topicList">
                             ["帮助内向的人在职场中建立影响力", "帮助不善于自我推销的人学会展示价值", "帮助害怕冲突的人学会建设性沟通", "帮助社交恐惧的人建立必要的人际关系"]
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <button class="btn" id="randomBtn" onclick="chooseRandomTopic()">随机选择主题</button>
+                        </div>
+                        <div style="margin-top: 18px;">
+                            <input type="text" id="customTopicInput" placeholder="或在此输入自定义主题" style="padding:8px 12px; border-radius:8px; border:1px solid #ccc; width:70%; font-size:1em;">
+                            <button class="btn" id="customBtn" onclick="chooseCustomTopic()">使用自定义主题</button>
                         </div>
                     </div>
                     <div class="data-box output" id="selectedTopic" style="display: none;">
@@ -435,11 +442,13 @@
 
         let currentStep = 0;
         let selectedTopic = "";
+        let selectedMode = ""; // "random" or "custom"
         let generatedArticles = {}; // 存储生成的文章数据
 
         function resetWorkflow() {
             currentStep = 0;
             selectedTopic = "";
+            selectedMode = "";
             generatedArticles = {};
             
             // 重置所有步骤状态
@@ -462,6 +471,11 @@
                 document.getElementById(`model${i}`).className = 'model-status waiting';
                 document.getElementById(`viewBtn${i}`).classList.remove('show');
             }
+
+            document.getElementById('customTopicInput').value = '';
+            document.getElementById('customTopicInput').disabled = false;
+            document.getElementById('customBtn').disabled = false;
+            document.getElementById('randomBtn').disabled = false;
         }
 
         async function startWorkflow() {
@@ -490,9 +504,10 @@
             
             await sleep(1000);
             
-            selectedTopic = topics[Math.floor(Math.random() * topics.length)];
-            document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
-            document.getElementById('selectedTopic').style.display = 'block';
+            // 如果未选择主题，自动随机选一个
+            if (!selectedTopic) {
+                chooseRandomTopic();
+            }
             
             document.getElementById('status1').textContent = '已完成';
             document.getElementById('status1').className = 'status completed';
@@ -843,6 +858,33 @@
 
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function chooseRandomTopic() {
+            if (selectedMode === 'custom') return;
+            selectedMode = 'random';
+            document.getElementById('customTopicInput').disabled = true;
+            document.getElementById('customBtn').disabled = true;
+            document.getElementById('randomBtn').disabled = true;
+            selectedTopic = topics[Math.floor(Math.random() * topics.length)];
+            document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
+            document.getElementById('selectedTopic').style.display = 'block';
+        }
+
+        function chooseCustomTopic() {
+            if (selectedMode === 'random') return;
+            const input = document.getElementById('customTopicInput').value.trim();
+            if (!input) {
+                alert('请输入自定义主题');
+                return;
+            }
+            selectedMode = 'custom';
+            document.getElementById('customTopicInput').disabled = true;
+            document.getElementById('customBtn').disabled = true;
+            document.getElementById('randomBtn').disabled = true;
+            selectedTopic = input;
+            document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
+            document.getElementById('selectedTopic').style.display = 'block';
         }
     </script>
 </body>
