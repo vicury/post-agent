@@ -425,6 +425,16 @@
                             <div class="model-status waiting" id="model3">待处理</div>
                             <button class="view-btn" id="viewBtn3" onclick="viewArticle('gemini')">📖 查看文章</button>
                         </div>
+                        <div class="model-card">
+                            <div class="model-name">DeepSeek</div>
+                            <div class="model-status waiting" id="model4">待处理</div>
+                            <button class="view-btn" id="viewBtn4" onclick="viewArticle('deepseek')">📖 查看文章</button>
+                        </div>
+                        <div class="model-card">
+                            <div class="model-name">腾讯混元</div>
+                            <div class="model-status waiting" id="model5">待处理</div>
+                            <button class="view-btn" id="viewBtn5" onclick="viewArticle('hunyuan')">📖 查看文章</button>
+                        </div>
                     </div>
                     <div class="data-box output" id="articles" style="display: none;">
                         <div class="data-label">📚 生成结果：</div>
@@ -435,7 +445,10 @@
         </div>
     </div>
 
+    <script type="module" src="model-keys.js"></script>
     <script>
+        import { MODEL_KEYS } from './model-keys.js';
+
         const topics = [
             "帮助内向的人在职场中建立影响力",
             "帮助不善于自我推销的人学会展示价值", 
@@ -470,7 +483,7 @@
             document.getElementById('articles').style.display = 'none';
             
             // 重置模型状态和按钮
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= 5; i++) {
                 document.getElementById(`model${i}`).textContent = '待处理';
                 document.getElementById(`model${i}`).className = 'model-status waiting';
                 document.getElementById(`viewBtn${i}`).classList.remove('show');
@@ -574,9 +587,9 @@
             document.getElementById('status4').className = 'status processing';
             
             // 模拟并行处理
-            const models = ['model1', 'model2', 'model3'];
-            const modelNames = ['GPT-4', 'Claude', 'Gemini'];
-            const modelKeys = ['gpt4', 'claude', 'gemini'];
+            const models = ['model1', 'model2', 'model3', 'model4', 'model5'];
+            const modelNames = ['GPT-4', 'Claude', 'Gemini', 'DeepSeek', '腾讯混元'];
+            const modelKeys = ['gpt4', 'claude', 'gemini', 'deepseek', 'hunyuan'];
             
             // 启动所有模型
             models.forEach(modelId => {
@@ -585,7 +598,7 @@
             });
             
             // 模拟不同完成时间
-            const delays = [2000, 2500, 1800];
+            const delays = [2000, 2500, 1800, 3200, 3500];
             const promises = models.map((modelId, index) => 
                 simulateModelGeneration(modelId, modelNames[index], modelKeys[index], delays[index])
             );
@@ -594,10 +607,12 @@
             
             // 显示最终结果
             document.getElementById('articlesResult').innerHTML = `
-                ✅ 成功生成 3 篇关于"${selectedTopic}"的文章<br>
+                ✅ 成功生成 5 篇关于"${selectedTopic}"的文章<br>
                 📄 GPT-4版本：${generatedArticles.gpt4?.wordCount || '4,247'}字，故事性强，情感共鸣深<br>
                 📄 Claude版本：${generatedArticles.claude?.wordCount || '4,156'}字，逻辑清晰，方法实用<br>
-                📄 Gemini版本：${generatedArticles.gemini?.wordCount || '4,089'}字，案例丰富，可操作性强
+                📄 Gemini版本：${generatedArticles.gemini?.wordCount || '4,089'}字，案例丰富，可操作性强<br>
+                📄 DeepSeek版本：${generatedArticles.deepseek?.wordCount || '4,000'}字，真实大模型生成内容<br>
+                📄 腾讯混元版本：${generatedArticles.hunyuan?.wordCount || '4,000'}字，真实大模型生成内容<br>
             `;
             document.getElementById('articles').style.display = 'block';
             
@@ -613,14 +628,116 @@
             generatedArticles[modelKey] = article;
             
             // 更新状态和显示查看按钮
-            document.getElementById(modelId).textContent = '已完成';
-            document.getElementById(modelId).className = 'model-status success';
-            
-            const viewBtnId = modelId.replace('model', 'viewBtn');
-            document.getElementById(viewBtnId).classList.add('show');
+            if (article && article.content && !article.content.startsWith('[')) {
+                document.getElementById(modelId).textContent = '已完成';
+                document.getElementById(modelId).className = 'model-status success';
+                const viewBtnId = modelId.replace('model', 'viewBtn');
+                document.getElementById(viewBtnId).classList.add('show');
+                document.getElementById(viewBtnId).disabled = false;
+            } else {
+                document.getElementById(modelId).textContent = '生成失败';
+                document.getElementById(modelId).className = 'model-status';
+                const viewBtnId = modelId.replace('model', 'viewBtn');
+                document.getElementById(viewBtnId).classList.remove('show');
+                document.getElementById(viewBtnId).disabled = true;
+            }
         }
 
         async function generateArticleContent(modelName, modelKey) {
+            // 腾讯混元 真实API调用
+            if (modelKey === 'hunyuan') {
+                const apiKey = MODEL_KEYS.hunyuan;
+                const prompt = finalPrompt;
+                try {
+                    const response = await fetch('https://hunyuan.tencentcloudapi.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'hunyuan-chat',
+                            messages: [
+                                { role: 'system', content: '你是一名专业的中文内容创作者。' },
+                                { role: 'user', content: prompt }
+                            ],
+                            temperature: 0.8,
+                            max_tokens: 4096
+                        })
+                    });
+                    const data = await response.json();
+                    let content = '';
+                    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                        content = data.choices[0].message.content;
+                    } else {
+                        content = '[腾讯混元API返回异常]';
+                    }
+                    return {
+                        title: '腾讯混元生成文章',
+                        content: content,
+                        wordCount: content.length,
+                        model: modelName,
+                        topic: selectedTopic,
+                        generateTime: new Date().toLocaleString()
+                    };
+                } catch (e) {
+                    return {
+                        title: '腾讯混元生成失败',
+                        content: '[腾讯混元API调用失败]',
+                        wordCount: 0,
+                        model: modelName,
+                        topic: selectedTopic,
+                        generateTime: new Date().toLocaleString()
+                    };
+                }
+            }
+            // DeepSeek 真实API调用
+            if (modelKey === 'deepseek') {
+                const apiKey = MODEL_KEYS.deepseek;
+                const prompt = finalPrompt;
+                try {
+                    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'deepseek-chat',
+                            messages: [
+                                { role: 'system', content: '你是一名专业的中文内容创作者。' },
+                                { role: 'user', content: prompt }
+                            ],
+                            temperature: 0.8,
+                            max_tokens: 4096
+                        })
+                    });
+                    const data = await response.json();
+                    let content = '';
+                    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                        content = data.choices[0].message.content;
+                    } else {
+                        content = '[DeepSeek API 返回异常]';
+                    }
+                    return {
+                        title: 'DeepSeek生成文章',
+                        content: content,
+                        wordCount: content.length,
+                        model: modelName,
+                        topic: selectedTopic,
+                        generateTime: new Date().toLocaleString()
+                    };
+                } catch (e) {
+                    return {
+                        title: 'DeepSeek生成失败',
+                        content: '[DeepSeek API 调用失败]',
+                        wordCount: 0,
+                        model: modelName,
+                        topic: selectedTopic,
+                        generateTime: new Date().toLocaleString()
+                    };
+                }
+            }
             // 模拟API调用延迟
             await sleep(500);
             
@@ -848,13 +965,17 @@
 
         function viewArticle(modelKey) {
             const article = generatedArticles[modelKey];
-            if (!article) {
-                alert('文章尚未生成完成，请稍后再试！');
+            if (!article || !article.content || article.content.startsWith('[')) {
+                alert('文章尚未生成完成或生成失败，请稍后再试！');
                 return;
             }
-            
             // 将文章数据存储到localStorage，然后打开新页面
-            localStorage.setItem('currentArticle', JSON.stringify(article));
+            // 增加模型来源标注
+            const articleWithSource = {
+                ...article,
+                content: `<div style='color:#888;font-size:0.95em;margin-bottom:8px;'>由 <b>${article.model}</b> 大模型生成</div>\n` + article.content
+            };
+            localStorage.setItem('currentArticle', JSON.stringify(articleWithSource));
             window.open('article-viewer.html', '_blank');
         }
 
