@@ -644,25 +644,14 @@
         }
 
         async function generateArticleContent(modelName, modelKey) {
-            // 腾讯混元 真实API调用
-            if (modelKey === 'hunyuan') {
-                const apiKey = MODEL_KEYS.hunyuan;
-                const prompt = finalPrompt;
+            if (modelKey === 'deepseek' || modelKey === 'hunyuan') {
                 try {
-                    const response = await fetch('https://hunyuan.tencentcloudapi.com/v1/chat/completions', {
+                    const response = await fetch('/api/generate', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            model: 'hunyuan-chat',
-                            messages: [
-                                { role: 'system', content: '你是一名专业的中文内容创作者。' },
-                                { role: 'user', content: prompt }
-                            ],
-                            temperature: 0.8,
-                            max_tokens: 4096
+                            model: modelKey,
+                            prompt: finalPrompt
                         })
                     });
                     const data = await response.json();
@@ -670,10 +659,10 @@
                     if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
                         content = data.choices[0].message.content;
                     } else {
-                        content = '[腾讯混元API返回异常]';
+                        content = `[${modelName} API返回异常]`;
                     }
                     return {
-                        title: '腾讯混元生成文章',
+                        title: modelName + '生成文章',
                         content: content,
                         wordCount: content.length,
                         model: modelName,
@@ -682,55 +671,8 @@
                     };
                 } catch (e) {
                     return {
-                        title: '腾讯混元生成失败',
-                        content: '[腾讯混元API调用失败]',
-                        wordCount: 0,
-                        model: modelName,
-                        topic: selectedTopic,
-                        generateTime: new Date().toLocaleString()
-                    };
-                }
-            }
-            // DeepSeek 真实API调用
-            if (modelKey === 'deepseek') {
-                const apiKey = MODEL_KEYS.deepseek;
-                const prompt = finalPrompt;
-                try {
-                    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: 'deepseek-chat',
-                            messages: [
-                                { role: 'system', content: '你是一名专业的中文内容创作者。' },
-                                { role: 'user', content: prompt }
-                            ],
-                            temperature: 0.8,
-                            max_tokens: 4096
-                        })
-                    });
-                    const data = await response.json();
-                    let content = '';
-                    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-                        content = data.choices[0].message.content;
-                    } else {
-                        content = '[DeepSeek API 返回异常]';
-                    }
-                    return {
-                        title: 'DeepSeek生成文章',
-                        content: content,
-                        wordCount: content.length,
-                        model: modelName,
-                        topic: selectedTopic,
-                        generateTime: new Date().toLocaleString()
-                    };
-                } catch (e) {
-                    return {
-                        title: 'DeepSeek生成失败',
-                        content: '[DeepSeek API 调用失败]',
+                        title: modelName + '生成失败',
+                        content: `[${modelName} API调用失败]`,
                         wordCount: 0,
                         model: modelName,
                         topic: selectedTopic,
