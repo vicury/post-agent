@@ -445,10 +445,7 @@
         </div>
     </div>
 
-    <script type="module" src="model-keys.js"></script>
     <script>
-        import { MODEL_KEYS } from './model-keys.js';
-
         const topics = [
             "帮助内向的人在职场中建立影响力",
             "帮助不善于自我推销的人学会展示价值", 
@@ -467,28 +464,24 @@
             selectedTopic = "";
             selectedMode = "";
             generatedArticles = {};
-            
             // 重置所有步骤状态
             for (let i = 1; i <= 4; i++) {
                 document.getElementById(`step${i}`).classList.remove('active');
                 document.getElementById(`status${i}`).textContent = '等待中';
                 document.getElementById(`status${i}`).className = 'status waiting';
             }
-            
             // 隐藏所有输出
             document.getElementById('selectedTopic').style.display = 'none';
             document.getElementById('replacedPrompt').style.display = 'none';
             document.getElementById('optimizing').style.display = 'none';
             document.getElementById('optimizedPrompt').style.display = 'none';
             document.getElementById('articles').style.display = 'none';
-            
-            // 重置模型状态和按钮
+            // 修正为5，重置所有模型状态和按钮
             for (let i = 1; i <= 5; i++) {
                 document.getElementById(`model${i}`).textContent = '待处理';
                 document.getElementById(`model${i}`).className = 'model-status waiting';
                 document.getElementById(`viewBtn${i}`).classList.remove('show');
             }
-
             document.getElementById('customTopicInput').value = '';
             document.getElementById('customTopicInput').disabled = false;
             document.getElementById('customBtn').disabled = false;
@@ -951,6 +944,14 @@
             document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
             document.getElementById('selectedTopic').style.display = 'block';
         }
+
+        // 在 script 末尾暴露全局
+        window.startWorkflow = startWorkflow;
+        window.chooseRandomTopic = chooseRandomTopic;
+        window.chooseCustomTopic = chooseCustomTopic;
+        window.resetWorkflow = resetWorkflow;
+        window.confirmOptimizedPrompt = confirmOptimizedPrompt;
+        window.viewArticle = viewArticle;
     </script>
 </body>
 </html>
