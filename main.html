@@ -390,7 +390,10 @@
                     </div>
                     <div class="data-box output" id="optimizedPrompt" style="display: none;">
                         <div class="data-label">✨ 优化后提示词：</div>
-                        <div id="optimizedResult"></div>
+                        <textarea id="optimizedPromptTextarea" style="width:100%;min-height:160px;font-size:1em;padding:10px;border-radius:8px;border:1px solid #ccc;"></textarea>
+                        <div style="text-align:right;margin-top:10px;">
+                            <button class="btn" id="confirmPromptBtn" onclick="confirmOptimizedPrompt()">确认提示词</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -444,6 +447,7 @@
         let selectedTopic = "";
         let selectedMode = ""; // "random" or "custom"
         let generatedArticles = {}; // 存储生成的文章数据
+        let finalPrompt = "";
 
         function resetWorkflow() {
             currentStep = 0;
@@ -480,35 +484,28 @@
 
         async function startWorkflow() {
             resetWorkflow();
-            
-            // Step 1: 选择主题
+            if (!selectedTopic) {
+                chooseRandomTopic();
+            }
             await executeStep1();
             await sleep(1500);
-            
-            // Step 2: 模板替换
             await executeStep2();
             await sleep(1500);
-            
-            // Step 3: 提示词优化
             await executeStep3();
-            await sleep(2000);
-            
-            // Step 4: 多模型生成
-            await executeStep4();
+            // 不再自动执行 Step4，等待用户确认提示词
+            // await executeStep4();
         }
 
         async function executeStep1() {
             document.getElementById('step1').classList.add('active');
             document.getElementById('status1').textContent = '执行中';
             document.getElementById('status1').className = 'status processing';
-            
             await sleep(1000);
-            
-            // 如果未选择主题，自动随机选一个
-            if (!selectedTopic) {
-                chooseRandomTopic();
+            // 只展示已选主题，不做自动选择
+            if (selectedTopic) {
+                document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
+                document.getElementById('selectedTopic').style.display = 'block';
             }
-            
             document.getElementById('status1').textContent = '已完成';
             document.getElementById('status1').className = 'status completed';
         }
@@ -533,10 +530,8 @@
             document.getElementById('step3').classList.add('active');
             document.getElementById('status3').textContent = '执行中';
             document.getElementById('status3').className = 'status processing';
-            
             document.getElementById('optimizing').style.display = 'block';
             await sleep(1500);
-            
             const optimizedPrompt = `作为一名专业的职场成长内容创作者，请撰写一篇关于"${selectedTopic}"的深度指导文章。
             
             <strong>写作风格要求：</strong><br>
@@ -557,13 +552,20 @@
             • 至少2个真实感人的案例故事<br>
             • 字数严格不少于4000字<br>
             • 标题要有吸引力和点击欲望`;
-
-            document.getElementById('optimizedResult').innerHTML = optimizedPrompt;
+            document.getElementById('optimizedPromptTextarea').value = optimizedPrompt;
             document.getElementById('optimizing').style.display = 'none';
             document.getElementById('optimizedPrompt').style.display = 'block';
-            
+            document.getElementById('confirmPromptBtn').disabled = false;
+            finalPrompt = optimizedPrompt;
             document.getElementById('status3').textContent = '已完成';
             document.getElementById('status3').className = 'status completed';
+        }
+
+        function confirmOptimizedPrompt() {
+            finalPrompt = document.getElementById('optimizedPromptTextarea').value;
+            document.getElementById('confirmPromptBtn').disabled = true;
+            // 进入下一步：多模型生成
+            executeStep4();
         }
 
         async function executeStep4() {
