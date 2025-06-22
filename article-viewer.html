@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章查看器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .meta-item strong {
+            color: #495057;
+        }
+
+        .model-badge {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .article-content {
+            line-height: 1.8;
+            color: #2c3e50;
+            font-size: 1.05em;
+        }
+
+        .article-content h2 {
+            color: #2c3e50;
+            font-size: 1.6em;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .article-content h3 {
+            color: #34495e;
+            font-size: 1.3em;
+            margin: 25px 0 12px 0;
+        }
+
+        .article-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .article-content ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        .article-content li {
+            margin-bottom: 8px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+            font-size: 1.2em;
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #dc3545;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .article-meta {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .back-btn {
+                top: 20px;
+                left: 20px;
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="goBack()">← 返回工作流</button>
+    
+    <div class="container">
+        <div id="loading" class="loading">
+            <h2>📖 正在加载文章...</h2>
+            <p>请稍候，文章内容正在准备中</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <h2>❌ 加载失败</h2>
+            <p>无法加载文章内容，请返回重新生成</p>
+        </div>
+
+        <div id="article" style="display: none;">
+            <div class="header">
+                <h1 id="articleTitle">文章标题</h1>
+            </div>
+
+            <div class="article-meta">
+                <div class="meta-item">
+                    <span>🤖 生成模型：</span>
+                    <span class="model-badge" id="modelName">GPT-4</span>
+                </div>
+                <div class="meta-item">
+                    <span>📝 文章主题：</span>
+                    <strong id="articleTopic">职场成长</strong>
+                </div>
+                <div class="meta-item">
+                    <span>📊 字数统计：</span>
+                    <strong id="wordCount">4,000+</strong>
+                </div>
+                <div class="meta-item">
+                    <span>⏰ 生成时间：</span>
+                    <strong id="generateTime">2024-01-01 12:00:00</strong>
+                </div>
+            </div>
+
+            <div class="article-content" id="articleContent">
+                <!-- 文章内容将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时获取文章数据
+        window.onload = function() {
+            loadArticle();
+        };
+
+        function loadArticle() {
+            try {
+                const articleData = localStorage.getItem('currentArticle');
+                
+                if (!articleData) {
+                    showError('未找到文章数据');
+                    return;
+                }
+
+                const article = JSON.parse(articleData);
+                
+                if (!article || !article.title || !article.content) {
+                    showError('文章数据格式错误');
+                    return;
+                }
+
+                // 显示文章内容
+                document.getElementById('articleTitle').textContent = article.title;
+                document.getElementById('modelName').textContent = article.model;
+                document.getElementById('articleTopic').textContent = article.topic;
+                document.getElementById('wordCount').textContent = article.wordCount;
+                document.getElementById('generateTime').textContent = article.generateTime;
+                document.getElementById('articleContent').innerHTML = article.content;
+
+                // 隐藏加载状态，显示文章
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('article').style.display = 'block';
+
+                // 更新页面标题
+                document.title = `${article.title} - 文章查看器`;
+
+            } catch (error) {
+                console.error('加载文章时出错:', error);
+                showError('加载文章时发生错误');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').innerHTML = `
+                <h2>❌ 加载失败</h2>
+                <p>${message}</p>
+            `;
+        }
+
+        function goBack() {
+            // 清除localStorage中的文章数据
+            localStorage.removeItem('currentArticle');
+            
+            // 返回主页面
+            if (window.opener) {
+                window.close();
+            } else {
+                window.history.back();
+            }
+        }
+
+        // 添加键盘快捷键支持
+        document.addEventListener('keydown', function(event) {
+            // ESC键返回
+            if (event.key === 'Escape') {
+                goBack();
+            }
+        });
+    </script>
+</body>
+</html> 

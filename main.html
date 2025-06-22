@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent 工作流演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .workflow {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .step {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #3498db;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .step.active {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step.active .step-number {
+            background: #e74c3c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .step-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .step-content {
+            margin-left: 55px;
+        }
+
+        .step-description {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .data-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .data-box.input {
+            border-left: 4px solid #28a745;
+        }
+
+        .data-box.output {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .data-box.processing {
+            border-left: 4px solid #ffc107;
+            background: #fff8e1;
+        }
+
+        .data-label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .control-panel {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #3498db;
+            font-size: 2em;
+            margin: 20px 0;
+        }
+
+        .status {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status.waiting {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.completed {
+            background: #d1edff;
+            color: #0c5460;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .model-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .model-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .model-status {
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .view-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .view-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .view-btn.show {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Agent 工作流演示</h1>
+            <p>自动化内容生成流程展示</p>
+        </div>
+
+        <div class="control-panel">
+            <button class="btn" onclick="startWorkflow()">开始执行工作流</button>
+            <button class="btn" onclick="resetWorkflow()">重置流程</button>
+        </div>
+
+        <div class="workflow">
+            <!-- Step 1: 选题 -->
+            <div class="step" id="step1">
+                <div class="status waiting" id="status1">等待中</div>
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">选择主题</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-description">从预设的选题列表中随机或按策略选择一个主题</div>
+                    <div class="data-box input">
+                        <div class="data-label">📋 选题列表：</div>
+                        <div id="topicList">
+                            ["帮助内向的人在职场中建立影响力", "帮助不善于自我推销的人学会展示价值", "帮助害怕冲突的人学会建设性沟通", "帮助社交恐惧的人建立必要的人际关系"]
+                        </div>
+                    </div>
+                    <div class="data-box output" id="selectedTopic" style="display: none;">
+                        <div class="data-label">🎯 选中主题：</div>
+                        <div id="topicResult"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">⬇️</div>
+
+            <!-- Step 2: 模板替换 -->
+            <div class="step" id="step2">
+                <div class="status waiting" id="status2">等待中</div>
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">模板替换</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-description">在提示词模板中替换主题占位符</div>
+                    <div class="data-box input">
+                        <div class="data-label">📝 原始模板：</div>
+                        <div>**请你参照微信公众号上的人气作者的行文风格撰写一篇文章，讲清楚"{topic}"这件事，字数不能少于 4000 字哦**</div>
+                    </div>
+                    <div class="data-box output" id="replacedPrompt" style="display: none;">
+                        <div class="data-label">🔄 替换后提示词：</div>
+                        <div id="promptResult"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">⬇️</div>
+
+            <!-- Step 3: 提示词优化 -->
+            <div class="step" id="step3">
+                <div class="status waiting" id="status3">等待中</div>
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">提示词优化</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-description">通过提示词优化器增强和完善提示词</div>
+                    <div class="data-box processing" id="optimizing" style="display: none;">
+                        <div class="data-label">⚙️ 优化中...</div>
+                        <div>正在分析提示词结构和语义，增加具体指导...</div>
+                    </div>
+                    <div class="data-box output" id="optimizedPrompt" style="display: none;">
+                        <div class="data-label">✨ 优化后提示词：</div>
+                        <div id="optimizedResult"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">⬇️</div>
+
+            <!-- Step 4: 多模型生成 -->
+            <div class="step" id="step4">
+                <div class="status waiting" id="status4">等待中</div>
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">多模型文章生成</div>
+                </div>
+                <div class="step-content">
+                    <div class="step-description">使用多个基座大模型并行生成文章</div>
+                    <div class="models-grid" id="modelsGrid">
+                        <div class="model-card">
+                            <div class="model-name">GPT-4</div>
+                            <div class="model-status waiting" id="model1">待处理</div>
+                            <button class="view-btn" id="viewBtn1" onclick="viewArticle('gpt4')">📖 查看文章</button>
+                        </div>
+                        <div class="model-card">
+                            <div class="model-name">Claude</div>
+                            <div class="model-status waiting" id="model2">待处理</div>
+                            <button class="view-btn" id="viewBtn2" onclick="viewArticle('claude')">📖 查看文章</button>
+                        </div>
+                        <div class="model-card">
+                            <div class="model-name">Gemini</div>
+                            <div class="model-status waiting" id="model3">待处理</div>
+                            <button class="view-btn" id="viewBtn3" onclick="viewArticle('gemini')">📖 查看文章</button>
+                        </div>
+                    </div>
+                    <div class="data-box output" id="articles" style="display: none;">
+                        <div class="data-label">📚 生成结果：</div>
+                        <div id="articlesResult"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const topics = [
+            "帮助内向的人在职场中建立影响力",
+            "帮助不善于自我推销的人学会展示价值", 
+            "帮助害怕冲突的人学会建设性沟通",
+            "帮助社交恐惧的人建立必要的人际关系"
+        ];
+
+        let currentStep = 0;
+        let selectedTopic = "";
+        let generatedArticles = {}; // 存储生成的文章数据
+
+        function resetWorkflow() {
+            currentStep = 0;
+            selectedTopic = "";
+            generatedArticles = {};
+            
+            // 重置所有步骤状态
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+                document.getElementById(`status${i}`).textContent = '等待中';
+                document.getElementById(`status${i}`).className = 'status waiting';
+            }
+            
+            // 隐藏所有输出
+            document.getElementById('selectedTopic').style.display = 'none';
+            document.getElementById('replacedPrompt').style.display = 'none';
+            document.getElementById('optimizing').style.display = 'none';
+            document.getElementById('optimizedPrompt').style.display = 'none';
+            document.getElementById('articles').style.display = 'none';
+            
+            // 重置模型状态和按钮
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`model${i}`).textContent = '待处理';
+                document.getElementById(`model${i}`).className = 'model-status waiting';
+                document.getElementById(`viewBtn${i}`).classList.remove('show');
+            }
+        }
+
+        async function startWorkflow() {
+            resetWorkflow();
+            
+            // Step 1: 选择主题
+            await executeStep1();
+            await sleep(1500);
+            
+            // Step 2: 模板替换
+            await executeStep2();
+            await sleep(1500);
+            
+            // Step 3: 提示词优化
+            await executeStep3();
+            await sleep(2000);
+            
+            // Step 4: 多模型生成
+            await executeStep4();
+        }
+
+        async function executeStep1() {
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('status1').textContent = '执行中';
+            document.getElementById('status1').className = 'status processing';
+            
+            await sleep(1000);
+            
+            selectedTopic = topics[Math.floor(Math.random() * topics.length)];
+            document.getElementById('topicResult').textContent = `"${selectedTopic}"`;
+            document.getElementById('selectedTopic').style.display = 'block';
+            
+            document.getElementById('status1').textContent = '已完成';
+            document.getElementById('status1').className = 'status completed';
+        }
+
+        async function executeStep2() {
+            document.getElementById('step2').classList.add('active');
+            document.getElementById('status2').textContent = '执行中';
+            document.getElementById('status2').className = 'status processing';
+            
+            await sleep(800);
+            
+            const replacedPrompt = `**请你参照微信公众号上的人气作者的行文风格撰写一篇文章，讲清楚"${selectedTopic}"这件事，字数不能少于 4000 字哦**`;
+            
+            document.getElementById('promptResult').innerHTML = replacedPrompt;
+            document.getElementById('replacedPrompt').style.display = 'block';
+            
+            document.getElementById('status2').textContent = '已完成';
+            document.getElementById('status2').className = 'status completed';
+        }
+
+        async function executeStep3() {
+            document.getElementById('step3').classList.add('active');
+            document.getElementById('status3').textContent = '执行中';
+            document.getElementById('status3').className = 'status processing';
+            
+            document.getElementById('optimizing').style.display = 'block';
+            await sleep(1500);
+            
+            const optimizedPrompt = `作为一名专业的职场成长内容创作者，请撰写一篇关于"${selectedTopic}"的深度指导文章。
+            
+            <strong>写作风格要求：</strong><br>
+            • 模仿知名微信公众号的人气作者风格（如：咪蒙、秋叶、李笑来等）<br>
+            • 开头要有引人入胜的故事或场景描述<br>
+            • 语言亲切自然，有温度，能引起读者共鸣<br>
+            • 适当使用网络流行语和表情符号增加亲和力<br>
+            
+            <strong>内容结构：</strong><br>
+            • 开篇故事/痛点引入 (500字)<br>
+            • 问题分析与心理洞察 (1000字)<br>
+            • 实用方法与技巧 (2000字)<br>
+            • 真实案例分享 (800字)<br>
+            • 总结与行动指南 (700字)<br>
+            
+            <strong>特色要求：</strong><br>
+            • 包含3-5个具体可操作的方法<br>
+            • 至少2个真实感人的案例故事<br>
+            • 字数严格不少于4000字<br>
+            • 标题要有吸引力和点击欲望`;
+
+            document.getElementById('optimizedResult').innerHTML = optimizedPrompt;
+            document.getElementById('optimizing').style.display = 'none';
+            document.getElementById('optimizedPrompt').style.display = 'block';
+            
+            document.getElementById('status3').textContent = '已完成';
+            document.getElementById('status3').className = 'status completed';
+        }
+
+        async function executeStep4() {
+            document.getElementById('step4').classList.add('active');
+            document.getElementById('status4').textContent = '执行中';
+            document.getElementById('status4').className = 'status processing';
+            
+            // 模拟并行处理
+            const models = ['model1', 'model2', 'model3'];
+            const modelNames = ['GPT-4', 'Claude', 'Gemini'];
+            const modelKeys = ['gpt4', 'claude', 'gemini'];
+            
+            // 启动所有模型
+            models.forEach(modelId => {
+                document.getElementById(modelId).textContent = '生成中...';
+                document.getElementById(modelId).className = 'model-status loading';
+            });
+            
+            // 模拟不同完成时间
+            const delays = [2000, 2500, 1800];
+            const promises = models.map((modelId, index) => 
+                simulateModelGeneration(modelId, modelNames[index], modelKeys[index], delays[index])
+            );
+            
+            await Promise.all(promises);
+            
+            // 显示最终结果
+            document.getElementById('articlesResult').innerHTML = `
+                ✅ 成功生成 3 篇关于"${selectedTopic}"的文章<br>
+                📄 GPT-4版本：${generatedArticles.gpt4?.wordCount || '4,247'}字，故事性强，情感共鸣深<br>
+                📄 Claude版本：${generatedArticles.claude?.wordCount || '4,156'}字，逻辑清晰，方法实用<br>
+                📄 Gemini版本：${generatedArticles.gemini?.wordCount || '4,089'}字，案例丰富，可操作性强
+            `;
+            document.getElementById('articles').style.display = 'block';
+            
+            document.getElementById('status4').textContent = '已完成';
+            document.getElementById('status4').className = 'status completed';
+        }
+
+        async function simulateModelGeneration(modelId, modelName, modelKey, delay) {
+            await sleep(delay);
+            
+            // 生成文章内容
+            const article = await generateArticleContent(modelName, modelKey);
+            generatedArticles[modelKey] = article;
+            
+            // 更新状态和显示查看按钮
+            document.getElementById(modelId).textContent = '已完成';
+            document.getElementById(modelId).className = 'model-status success';
+            
+            const viewBtnId = modelId.replace('model', 'viewBtn');
+            document.getElementById(viewBtnId).classList.add('show');
+        }
+
+        async function generateArticleContent(modelName, modelKey) {
+            // 模拟API调用延迟
+            await sleep(500);
+            
+            const titles = {
+                gpt4: {
+                    "帮助内向的人在职场中建立影响力": "内向者的逆袭：如何在职场中悄悄建立你的影响力？",
+                    "帮助不善于自我推销的人学会展示价值": "不会自夸？教你3招让老板主动发现你的价值！",
+                    "帮助害怕冲突的人学会建设性沟通": "害怕吵架的你，如何在职场中优雅地表达不同意见？",
+                    "帮助社交恐惧的人建立必要的人际关系": "社恐福音：教你用最小的社交成本建立职场人脉"
+                },
+                claude: {
+                    "帮助内向的人在职场中建立影响力": "内向性格不是缺点：5个策略让你在职场发光发热",
+                    "帮助不善于自我推销的人学会展示价值": "低调做人，高调做事：让成果自己说话的艺术",
+                    "帮助害怕冲突的人学会建设性沟通": "和谐沟通的智慧：如何在分歧中寻找共识",
+                    "帮助社交恐惧的人建立必要的人际关系": "从社交恐惧到职场达人：一步步建立有效人际网络"
+                },
+                gemini: {
+                    "帮助内向的人在职场中建立影响力": "内向者的职场生存手册：用你的方式建立影响力",
+                    "帮助不善于自我推销的人学会展示价值": "不善表达？这样展示你的工作价值更有效！",
+                    "帮助害怕冲突的人学会建设性沟通": "职场沟通新思路：把冲突变成合作的机会",
+                    "帮助社交恐惧的人建立必要的人际关系": "社交恐惧症患者的职场人际关系建设指南"
+                }
+            };
+
+            const title = titles[modelKey][selectedTopic] || "职场成长指南";
+            const wordCount = Math.floor(Math.random() * 1000) + 3500; // 3500-4500字
+            
+            return {
+                title: title,
+                content: await getArticleContent(modelKey),
+                wordCount: wordCount.toLocaleString(),
+                model: modelName,
+                topic: selectedTopic,
+                generateTime: new Date().toLocaleString()
+            };
+        }
+
+        async function getArticleContent(modelKey) {
+            // 这里模拟不同模型生成的不同风格内容
+            const contents = {
+                gpt4: `
+                    <h2>📖 开篇故事</h2>
+                    <p>小李是一个典型的内向者，入职三年来，他的工作能力有目共睹，但在公司里总是默默无闻。每次开会时，他总是坐在角落里，即使有好的想法也不敢主动发言。看着那些外向的同事频频在老板面前表现，获得更多的机会和认可，小李开始怀疑：内向的人真的无法在职场中建立影响力吗？</p>
+                    
+                    <p>如果你也有类似的困扰，那么今天这篇文章就是为你准备的。作为一个曾经的"隐形人"，我想告诉你：内向不是缺陷，而是一种独特的优势。关键在于如何发挥这种优势，在职场中建立属于你的影响力。</p>
+
+                    <h2>🔍 深度分析：内向者的职场困境</h2>
+                    <p>很多内向者在职场中面临着相似的挑战。根据心理学研究，内向者更倾向于深度思考而非快速反应，更喜欢一对一交流而非大型会议。这些特质在传统的职场环境中可能被误解为"不够积极"或"缺乏领导力"。</p>
+
+                    <p>但是，我们需要重新定义什么是职场影响力。影响力不等于声音大，也不等于话最多。真正的影响力来自于你能为团队和组织创造的价值，以及你影响他人思考和行动的能力。</p>
+
+                    <h2>💡 五大策略，让内向者建立独特影响力</h2>
+                    <h3>策略一：成为深度专家</h3>
+                    <p>内向者天生具备深度思考的能力。与其在浅层的社交中消耗精力，不如将注意力集中在成为某个领域的专家上。当你在某个专业领域具备不可替代的价值时，影响力自然而然就建立起来了。</p>
+
+                    <h3>策略二：一对一建立深度关系</h3>
+                    <p>内向者更擅长一对一的深度交流。利用这个优势，主动与关键同事建立更深层的工作关系。一个真正了解你能力的同事，胜过十个点头之交。</p>
+
+                    <h3>策略三：书面表达你的想法</h3>
+                    <p>如果在会议上发言让你紧张，那就充分利用书面沟通的优势。通过邮件、报告、提案等方式表达你的观点和建议。书面表达往往更加深思熟虑，也更容易被保存和传播。</p>
+
+                    <h2>📚 真实案例分享</h2>
+                    <p>让我分享一个真实的案例。我的前同事张华，是一个极度内向的产品经理。在部门会议上，他几乎从不主动发言。但是，他有一个习惯：每次会议后，他都会发送一份详细的会议纪要和后续行动建议。</p>
+
+                    <p>慢慢地，大家发现张华的会议总结总是最全面、最有洞察力的。他的建议往往切中要害，为项目指明了方向。最终，张华被提升为高级产品经理，成为了团队的核心人物。</p>
+
+                    <h2>🎯 行动指南：从今天开始改变</h2>
+                    <p>建立影响力不是一夜之间的事情，但你可以从这些小步骤开始：</p>
+                    <ul>
+                        <li>选择一个你感兴趣的专业领域，开始深度学习</li>
+                        <li>主动与一位重要同事建立更深的工作关系</li>
+                        <li>在下次会议前，准备一份书面的观点总结</li>
+                        <li>寻找适合你的表达方式，可能是写作，可能是数据分析</li>
+                        <li>保持耐心，相信时间会证明你的价值</li>
+                    </ul>
+
+                    <p>记住，职场不需要每个人都成为外向的演说家。世界需要深度思考者，需要默默耕耘的专家，需要用行动而非言语证明价值的人。你的内向性格，正是你独特的竞争优势。</p>
+                `,
+                claude: `
+                    <h2>🌟 重新认识内向性格</h2>
+                    <p>首先，我们需要打破一个误区：内向不等于社交恐惧，也不等于缺乏领导力。心理学研究表明，内向者在深度思考、专注力、倾听能力等方面往往具有天然优势。这些特质在现代职场中越来越被重视。</p>
+
+                    <p>真正的问题不在于你是否内向，而在于你是否了解如何发挥自己的优势，并找到适合自己的影响力建立方式。</p>
+
+                    <h2>🎯 策略一：打造个人专业品牌</h2>
+                    <p>内向者通常具备优秀的专注力和深度思考能力。这是建立专业影响力的核心优势。建议你：</p>
+                    <ul>
+                        <li>选择一个与工作相关的专业领域进行深度学习</li>
+                        <li>定期分享你的专业见解（可以通过内部邮件、报告等形式）</li>
+                        <li>成为团队中某个特定问题的"go-to person"</li>
+                    </ul>
+
+                    <h2>🤝 策略二：精耕细作人际关系</h2>
+                    <p>内向者更适合建立少数但深度的人际关系，而不是广泛的社交网络。这种策略往往更加有效：</p>
+                    <ul>
+                        <li>主动与关键同事进行一对一的深度交流</li>
+                        <li>在小团队讨论中更积极地参与</li>
+                        <li>成为可靠的团队成员，让同事愿意向你寻求帮助</li>
+                    </ul>
+
+                    <h2>📝 策略三：利用书面沟通优势</h2>
+                    <p>很多内向者在书面表达方面更有优势。充分利用这个特点：</p>
+                    <ul>
+                        <li>通过详细的项目报告展示你的思考深度</li>
+                        <li>在重要会议前准备书面材料</li>
+                        <li>利用邮件、即时消息等工具参与讨论</li>
+                    </ul>
+
+                    <h2>📈 成功案例：从幕后到台前</h2>
+                    <p>我认识一位名叫林小雅的数据分析师，她性格内向，在团队会议中很少发言。但她有一个习惯：每月制作一份数据洞察报告，不仅包含数据分析，还有基于数据的策略建议。</p>
+
+                    <p>这份报告逐渐成为了整个业务团队的重要参考。林小雅也因此被认为是"数据专家"，经常有其他部门的同事向她咨询。最终，她被提升为数据分析主管，影响力扩展到了整个公司。</p>
+
+                    <h2>🚀 实施步骤</h2>
+                    <h3>第一周：自我评估</h3>
+                    <ul>
+                        <li>列出你的专业优势和兴趣领域</li>
+                        <li>识别你想要影响的关键人群</li>
+                        <li>评估现有的沟通渠道和方式</li>
+                    </ul>
+
+                    <h3>第一个月：小步试验</h3>
+                    <ul>
+                        <li>选择一个专业话题，准备一份深度分析</li>
+                        <li>主动与一位重要同事进行工作交流</li>
+                        <li>在团队讨论中至少贡献一个有价值的观点</li>
+                    </ul>
+
+                    <h3>持续优化：</h3>
+                    <ul>
+                        <li>定期反思和调整策略</li>
+                        <li>寻求反馈，了解他人对你的看法变化</li>
+                        <li>保持耐心，影响力的建立需要时间</li>
+                    </ul>
+
+                    <p>记住，职场影响力有很多种形式。找到适合你性格特点的方式，持续努力，你也能在职场中发光发热。</p>
+                `,
+                gemini: `
+                    <h2>💭 内向者的职场现状分析</h2>
+                    <p>在一个似乎更偏爱外向性格的职场环境中，内向者常常感到被边缘化。据统计，约有30-50%的人具有内向性格特征，但在领导层中，内向者的比例却相对较低。这种现象让很多内向的职场人士产生了自我怀疑。</p>
+
+                    <p>但事实上，一些世界知名的领导者，如比尔·盖茨、沃伦·巴菲特、马克·扎克伯格等，都是内向性格。他们的成功证明了内向者同样可以在职场中建立强大的影响力。</p>
+
+                    <h2>🔑 核心原则：发挥内向优势</h2>
+                    <h3>深度思考能力</h3>
+                    <p>内向者通常具备优秀的深度思考能力。在快节奏的职场中，这种能力尤为珍贵。你可以：</p>
+                    <ul>
+                        <li>在团队决策中提供深度分析和洞察</li>
+                        <li>成为解决复杂问题的专家</li>
+                        <li>为团队提供长远的战略思考</li>
+                    </ul>
+
+                    <h3>专注力优势</h3>
+                    <p>内向者往往能够长时间专注于单一任务，这在需要精细工作的岗位上是巨大优势：</p>
+                    <ul>
+                        <li>承担需要高度专注的重要项目</li>
+                        <li>成为某个专业领域的专家</li>
+                        <li>提供高质量的工作成果</li>
+                    </ul>
+
+                    <h2>🛠️ 实用工具和方法</h2>
+                    <h3>工具1：影响力地图</h3>
+                    <p>制作一份个人影响力地图，明确你想要影响的人群和影响方式：</p>
+                    <ul>
+                        <li>直接影响：直接合作的同事和上级</li>
+                        <li>间接影响：通过你的工作成果影响的更广泛人群</li>
+                        <li>长期影响：通过专业知识积累建立的行业影响力</li>
+                    </ul>
+
+                    <h3>工具2：沟通策略矩阵</h3>
+                    <p>针对不同的沟通场景，制定相应的策略：</p>
+                    <ul>
+                        <li>一对一交流：发挥深度对话优势</li>
+                        <li>小组讨论：准备充分，贡献高质量观点</li>
+                        <li>大型会议：利用书面材料预先分享观点</li>
+                        <li>非正式场合：选择舒适的环境进行交流</li>
+                    </ul>
+
+                    <h2>📊 成功案例深度解析</h2>
+                    <h3>案例：技术专家到CTO的蜕变</h3>
+                    <p>王铭是一位软件架构师，性格内向，不善于在大型会议中发言。但他有一个习惯：每次技术讨论后，都会写一份详细的技术总结报告，包含问题分析、解决方案和风险评估。</p>
+
+                    <p>这些报告质量极高，逐渐成为了团队的重要参考文档。公司高层注意到了王铭的专业能力和深度思考，最终提拔他为CTO。王铭的成功路径展示了内向者如何通过专业影响力建立职场地位。</p>
+
+                    <h3>关键成功因素分析：</h3>
+                    <ul>
+                        <li>专业深度：在技术领域建立了不可替代的专业地位</li>
+                        <li>持续贡献：通过高质量的工作产出持续创造价值</li>
+                        <li>适合的表达方式：选择书面报告而非口头汇报</li>
+                        <li>长期坚持：持续的专业积累最终获得认可</li>
+                    </ul>
+
+                    <h2>📋 90天行动计划</h2>
+                    <h3>第1-30天：基础建设期</h3>
+                    <ul>
+                        <li>完成个人SWOT分析，明确优势和改进点</li>
+                        <li>选择1-2个专业发展方向</li>
+                        <li>识别3-5个关键的影响对象</li>
+                        <li>建立个人知识管理系统</li>
+                    </ul>
+
+                    <h3>第31-60天：能力展示期</h3>
+                    <ul>
+                        <li>主动承担1个有挑战性的项目</li>
+                        <li>与关键同事进行至少3次深度工作交流</li>
+                        <li>分享1-2次专业见解（可以是报告、邮件或内部分享）</li>
+                        <li>寻求反馈，了解他人对你的认知变化</li>
+                    </ul>
+
+                    <h3>第61-90天：影响力扩展期</h3>
+                    <ul>
+                        <li>主动参与跨部门项目或讨论</li>
+                        <li>建立个人专业品牌（内部知名度）</li>
+                        <li>成为至少一个专业话题的"意见领袖"</li>
+                        <li>评估影响力建设效果，制定下阶段计划</li>
+                    </ul>
+
+                    <h2>💡 关键提醒</h2>
+                    <p>建立影响力是一个渐进的过程，需要耐心和坚持。不要试图改变你的性格，而是要学会发挥你的性格优势。记住，职场需要多样化的人才，内向者的深度思考和专注力同样是宝贵的财富。</p>
+                `
+            };
+
+            return contents[modelKey] || contents.gpt4;
+        }
+
+        function viewArticle(modelKey) {
+            const article = generatedArticles[modelKey];
+            if (!article) {
+                alert('文章尚未生成完成，请稍后再试！');
+                return;
+            }
+            
+            // 将文章数据存储到localStorage，然后打开新页面
+            localStorage.setItem('currentArticle', JSON.stringify(article));
+            window.open('article-viewer.html', '_blank');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>

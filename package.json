@@ -1,0 +1,22 @@
+{
+  "name": "agent-workflow-demo",
+  "version": "1.0.0",
+  "description": "Agent工作流演示 - 自动化内容生成流程展示",
+  "main": "main.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "agent",
+    "workflow",
+    "ai",
+    "content-generation",
+    "demo"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+} 
