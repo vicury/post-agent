@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   let apiUrl, apiKey, body, headers;
   if (model === 'deepseek') {
-    apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+    apiUrl = 'https://api.deepseek.com/chat/completions';
     apiKey = process.env.DEEPSEEK_KEY;
     headers = {
       'Content-Type': 'application/json',
@@ -19,24 +19,22 @@ export default async function handler(req, res) {
         { role: 'system', content: '你是一名专业的中文内容创作者。' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.8,
-      max_tokens: 4096
+      stream: false
     });
   } else if (model === 'hunyuan') {
-    apiUrl = 'https://hunyuan.tencentcloudapi.com/v1/chat/completions';
+    apiUrl = 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
     apiKey = process.env.HUNYUAN_KEY;
     headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     };
     body = JSON.stringify({
-      model: 'hunyuan-chat',
+      model: 'hunyuan-turbos-latest',
       messages: [
         { role: 'system', content: '你是一名专业的中文内容创作者。' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.8,
-      max_tokens: 4096
+      enable_enhancement: true
     });
   } else {
     res.status(400).json({ error: 'Unsupported model' });
