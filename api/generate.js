@@ -9,6 +9,7 @@ export default async function handler(req, res) {
   if (model === 'deepseek') {
     apiUrl = 'https://api.deepseek.com/chat/completions';
     apiKey = process.env.DEEPSEEK_KEY;
+    console.log('DEEPSEEK_KEY:', apiKey);
     if (!apiKey) {
       console.error('DEEPSEEK_KEY not set in environment variables');
       res.status(500).json({ error: 'DEEPSEEK_KEY not set in environment variables' });
@@ -16,7 +17,7 @@ export default async function handler(req, res) {
     }
     headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${apiKey}`.trim(),
     };
     body = JSON.stringify({
       model: 'deepseek-chat',
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
   } else if (model === 'hunyuan') {
     apiUrl = 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
     apiKey = process.env.HUNYUAN_KEY;
+    console.log('HUNYUAN_KEY:', apiKey);
     if (!apiKey) {
       console.error('HUNYUAN_KEY not set in environment variables');
       res.status(500).json({ error: 'HUNYUAN_KEY not set in environment variables' });
@@ -36,7 +38,7 @@ export default async function handler(req, res) {
     }
     headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${apiKey}`.trim(),
     };
     body = JSON.stringify({
       model: 'hunyuan-turbos-latest',
